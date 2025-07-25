@@ -18,24 +18,41 @@ namespace App\Http\Controllers\API;
  * )
  * 
  * @OA\Schema(
+ *     schema="Schedule",
+ *     type="object",
+ *     title="Schedule",
+ *     description="Model jadwal lapangan",
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="court_id", type="integer", example=1),
+ *     @OA\Property(property="date", type="string", format="date", example="2024-01-15"),
+ *     @OA\Property(property="start_time", type="string", format="time", example="09:00"),
+ *     @OA\Property(property="end_time", type="string", format="time", example="11:00"),
+ *     @OA\Property(property="status", type="string", enum={"available", "booked"}, example="available"),
+ *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-15T10:00:00Z"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-15T10:00:00Z"),
+ *     @OA\Property(property="court", ref="#/components/schemas/Court")
+ * )
+ * 
+ * @OA\Schema(
  *     schema="Booking",
  *     type="object",
  *     title="Booking",
  *     description="Model pemesanan lapangan",
  *     @OA\Property(property="id", type="integer", example=1),
- *     @OA\Property(property="court_id", type="integer", example=1),
+ *     @OA\Property(property="schedule_id", type="integer", example=1),
  *     @OA\Property(property="customer_name", type="string", example="John Doe"),
  *     @OA\Property(property="customer_phone", type="string", example="08123456789"),
  *     @OA\Property(property="customer_email", type="string", example="john@email.com"),
- *     @OA\Property(property="booking_date", type="string", format="date", example="2024-01-15"),
- *     @OA\Property(property="start_time", type="string", format="time", example="09:00"),
- *     @OA\Property(property="end_time", type="string", format="time", example="11:00"),
  *     @OA\Property(property="total_price", type="number", format="decimal", example=100000),
- *     @OA\Property(property="status", type="string", enum={"pending", "confirmed", "cancelled"}, example="pending"),
  *     @OA\Property(property="notes", type="string", example="Booking untuk latihan"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-15T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-15T10:00:00Z"),
- *     @OA\Property(property="court", ref="#/components/schemas/Court")
+ *     @OA\Property(
+ *         property="schedule",
+ *         allOf={
+ *             @OA\Schema(ref="#/components/schemas/Schedule")
+ *         }
+ *     )
  * )
  * 
  * @OA\Schema(

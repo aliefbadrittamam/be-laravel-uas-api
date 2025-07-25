@@ -22,8 +22,8 @@ use Illuminate\Routing\Controller as BaseController;
  * )
  * 
  * @OA\Server(
- *     url=L5_SWAGGER_CONST_HOST,
- *     description="API Server"
+ *     url="http://127.0.0.1:8000",
+ *     description="Development Server"
  * )
  * 
  * @OA\PathItem(path="/api/v1")
@@ -31,6 +31,11 @@ use Illuminate\Routing\Controller as BaseController;
  * @OA\Tag(
  *     name="Courts",
  *     description="Operasi yang berkaitan dengan lapangan badminton"
+ * )
+ * 
+ * @OA\Tag(
+ *     name="Schedules",
+ *     description="Operasi yang berkaitan dengan jadwal lapangan"
  * )
  * 
  * @OA\Tag(

@@ -20,9 +20,9 @@ class Court extends Model
         'price_per_hour' => 'decimal:2'
     ];
 
-    public function bookings()
+    public function schedules()
     {
-        return $this->hasMany(Booking::class);
+        return $this->hasMany(Schedule::class);
     }
 
     public function scopeActive($query)
