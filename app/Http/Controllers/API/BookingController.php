@@ -7,6 +7,8 @@ use App\Models\Booking;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
@@ -47,6 +49,7 @@ class BookingController extends Controller
                 'data' => $bookings
             ]);
         } catch (\Exception $e) {
+            Log::error('Error retrieving bookings: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving bookings',
@@ -100,6 +103,7 @@ class BookingController extends Controller
                 'data' => $booking
             ]);
         } catch (\Exception $e) {
+            Log::error('Error retrieving booking: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Booking not found',
@@ -148,7 +152,10 @@ class BookingController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        DB::beginTransaction();
+        
         try {
+            // Validate input
             $validated = $request->validate([
                 'schedule_id' => 'required|exists:schedules,id',
                 'customer_name' => 'required|string|max:255',
@@ -158,13 +165,31 @@ class BookingController extends Controller
             ]);
 
             // Check if schedule is available
-            $schedule = Schedule::where('id', $validated['schedule_id'])
+            $schedule = Schedule::with('court')
+                              ->where('id', $validated['schedule_id'])
                               ->where('status', 'available')
-                              ->firstOrFail();
+                              ->first();
 
-            // Calculate total price
-            $duration = $schedule->getDurationInHours();
-            $validated['total_price'] = $schedule->court->price_per_hour * $duration;
+            if (!$schedule) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Schedule not available or not found',
+                    'error' => 'The selected schedule is not available for booking'
+                ], 422);
+            }
+
+            // Calculate total price with better error handling
+            try {
+                $duration = $schedule->getDurationInHours();
+                $validated['total_price'] = $schedule->court->price_per_hour * $duration;
+            } catch (\Exception $e) {
+                Log::error('Error calculating price: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error calculating price',
+                    'error' => 'Could not calculate total price for this booking'
+                ], 500);
+            }
 
             // Create booking
             $booking = Booking::create($validated);
@@ -172,14 +197,30 @@ class BookingController extends Controller
             // Update schedule status to booked
             $schedule->update(['status' => 'booked']);
 
+            // Load relationships for response
             $booking->load(['schedule.court']);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Booking created successfully',
                 'data' => $booking
             ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+            
         } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error creating booking: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error creating booking',
@@ -257,6 +298,7 @@ class BookingController extends Controller
                 'data' => $booking
             ]);
         } catch (\Exception $e) {
+            Log::error('Error updating booking: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error updating booking',
@@ -300,6 +342,8 @@ class BookingController extends Controller
      */
     public function destroy($id): JsonResponse
     {
+        DB::beginTransaction();
+        
         try {
             $booking = Booking::with('schedule')->findOrFail($id);
             
@@ -309,11 +353,15 @@ class BookingController extends Controller
             // Delete booking
             $booking->delete();
 
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Booking deleted successfully'
             ]);
         } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error deleting booking: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error deleting booking',
